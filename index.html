@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Horaires - Ligne R380</title>
+    <link rel="icon" type="image/png" href="https://play-lh.googleusercontent.com/noGWVy0hBVBbrWHkdXRMonMJJn7p3UTDqNSKG8Iw305HwOk3LIezBwn2Pvk3y4dur4I">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; transition: background-color 0.3s ease; }
+        .glass-card { transition: all 0.3s ease; }
+        .dark .glass-card { background: rgba(30, 41, 59, 0.8); border-color: rgba(51, 65, 85, 0.5); }
+        .pulse-now { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .5; } }
+    </style>
+</head>
+<body class="bg-slate-50 dark:bg-slate-950 pb-20">
+
+    <div id="app" class="max-w-md mx-auto px-4 pt-6">
+        <!-- Header -->
+        <header class="mb-6">
+            <div class="flex justify-between items-start mb-4">
+                <div class="flex flex-col gap-3">
+                    <h1 class="text-2xl font-bold text-blue-900 dark:text-blue-400 mb-1">Horaires - Ligne R380</h1>
+                    <div class="flex flex-col">
+                        <p id="current-date-info" class="text-sm text-gray-500 dark:text-slate-400 font-medium capitalize"></p>
+                        <p id="current-time-display" class="text-3xl font-black text-gray-800 dark:text-white mt-1"></p>
+                        <p id="period-info" class="text-xs font-bold text-blue-600 dark:text-blue-500 uppercase tracking-tighter mt-1"></p>
+                    </div>
+                    <button id="theme-toggle" class="w-10 h-10 flex items-center justify-center bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700 text-gray-600 dark:text-yellow-400 hover:scale-105 active:scale-95 transition-all">
+                        <svg id="sun-icon" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707m12.728 0l-.707-.707M6.343 6.343l-.707-.707M12 8a4 4 0 100 8 4 4 0 000-8z" />
+                        </svg>
+                        <svg id="moon-icon" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                        </svg>
+                    </button>
+                </div>
+<!-- LOGO -->
+            </div>
+        </header>
+
+        <!-- Configuration -->
+        <div class="glass-card bg-white rounded-2xl p-4 shadow-sm border border-gray-100 mb-6">
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex-1">
+                    <label class="text-xs font-semibold text-gray-400 dark:text-slate-500 uppercase tracking-wider">Sens du trajet</label>
+                    <div class="flex items-center gap-3 mt-1">
+                        <span id="label-origin" class="font-bold text-gray-800 dark:text-slate-200">Ecuelle</span>
+                        <button id="btn-swap" class="p-2 bg-blue-50 dark:bg-blue-900/30 rounded-full text-blue-600 dark:text-blue-400 active:scale-95 transition-transform">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                            </svg>
+                        </button>
+                        <span id="label-dest" class="font-bold text-gray-800 dark:text-slate-200">Nancy</span>
+                    </div>
+                </div>
+            </div>
+            <div class="w-full">
+                <label class="text-xs font-semibold text-gray-400 dark:text-slate-500 uppercase tracking-wider">Arrêt de passage</label>
+                <select id="select-stop" class="w-full mt-1 p-3 bg-gray-50 dark:bg-slate-800 border-none rounded-xl font-medium text-gray-700 dark:text-slate-200 focus:ring-2 focus:ring-blue-500 outline-none">
+                </select>
+            </div>
+        </div>
+
+        <!-- Mode de vue -->
+        <div class="flex bg-gray-200/50 dark:bg-slate-800/50 p-1 rounded-xl mb-6">
+            <button id="day-today" class="flex-1 py-2 text-sm font-bold rounded-lg transition-all bg-white dark:bg-slate-700 shadow-sm text-blue-600 dark:text-blue-400">Aujourd'hui</button>
+            <button id="day-tomorrow" class="flex-1 py-2 text-sm font-bold rounded-lg transition-all text-gray-500 dark:text-slate-400">Demain</button>
+        </div>
+
+        <!-- Liste -->
+        <main>
+            <h2 class="text-lg font-bold text-gray-800 dark:text-slate-100 mb-3 flex items-center gap-2">
+                <span id="results-title">Passages à venir</span>
+                <span id="count-badge" class="bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 text-xs px-2 py-0.5 rounded-full"></span>
+            </h2>
+            <div id="schedule-list" class="space-y-3"></div>
+            <div id="empty-state" class="hidden py-12 text-center">
+                <p id="empty-message" class="text-gray-500 dark:text-slate-400 font-medium text-sm"></p>
+            </div>
+        </main>
+
+        <!-- Nouveau Bouton Fiche Horaire -->
+        <div class="mt-8">
+            <a href="https://www.lay-saint-christophe.fr/wp-content/uploads/2020/09/R-380-2020-2021.pdf" target="_blank" class="w-full flex items-center justify-center gap-3 p-4 bg-white dark:bg-slate-800 border border-blue-100 dark:border-slate-700 rounded-2xl shadow-sm text-blue-600 dark:text-blue-400 font-bold hover:bg-blue-50 dark:hover:bg-slate-700 transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                Voir la fiche horaire
+            </a>
+        </div>
+
+        <!-- Footer -->
+        <footer class="mt-8 text-center border-t border-gray-100 dark:border-slate-800 pt-6 px-4">
+            <p class="text-[10px] text-gray-400 dark:text-slate-500 leading-relaxed mb-4">Horaires communiquées par le Réseau Fluo Grand Est 54 valables depuis Septembre 2020</p>
+            <p class="text-[10px] text-gray-400 dark:text-slate-500 font-medium">© Commune d'Eulmont, Seille & Grand Couronné</p>
+        </footer>
+    </div>
+
+    <script>
+        const rawDataEcuelleNancy = `"Arrêt / Service",PV-GV,SC,SC,SC,SC,AN,AN,AN,AN
+Jours,L-S,L-S,L-V,L-S,L-S,L-S,L-M-J-V-S,L-S,L-S
+"ARMAUCOURT - Mairie",-,06:38,-,-,-,-,-,-,-
+"LEYR - Promenade",06:34,06:44,-,07:09,-,-,-,-,-
+"ECUELLE - Lavoir",06:40,06:50,-,07:15,08:00,09:00,12:15,13:15,15:15
+"ECUELLE - Les Vergers",06:41,06:51,-,07:16,08:01,09:01,12:16,13:16,15:16
+"BOUXIERES C. - Calvaire",06:44,06:54,-,07:19,08:03,09:05,12:19,13:18,15:19
+"BOUXIERES C. - Noisetiers",06:45,06:55,-,07:20,08:04,-,-,13:19,-
+"BOUXIERES C. - Le Gué",06:46,06:56,-,07:21,08:05,-,-,13:20,-
+"MOULINS - Sous Moulins",06:50,07:00,06:50,07:25,08:10,09:10,12:25,13:25,15:22
+"EULMONT - Ferme",06:55,07:03,06:55,07:29,08:14,09:14,12:29,13:29,15:25
+"EULMONT - Poirier",06:58,07:05,06:58,07:32,08:17,09:17,12:32,13:32,15:27
+"LAY-ST-CH. - Mairie",07:01,07:11,07:02,07:35,08:21,09:20,12:35,13:36,15:31
+"LAY-ST-CH. - Le Nid",07:04,07:14,07:05,07:38,08:24,09:23,12:39,13:41,15:34
+"LAY-ST-CH. -  Centre de Réadaptation",07:05,-,07:06,07:39,08:25,-,12:40,13:41,-
+"LAY-ST-CH. - Corvées",07:07,-,07:07,07:41,08:27,-,12:41,13:42,-`;
+
+        const rawDataNancyEcuelle = `"Arrêt / Service",AN,SC,SC,SC,PG-GV,SC,AN,SC,AN,AN,AN
+Jours,L-S,Me-S,Me-S,L-S,L-S,L-S,L-V,L-M-J-V,L-V,L-S,L-S
+"NANCY - République",12:10,12:30,13:25,15:05,16:05,16:15,17:05,17:30,18:05,18:30,19:30
+"NANCY - Place Carnot",12:15,12:35,13:30,15:09,16:10,16:20,17:10,17:35,18:10,18:36,19:33
+"NANCY - Pierson",12:21,12:38,13:33,15:13,16:15,16:25,17:15,17:39,18:14,18:40,19:36
+"MALZÉVILLE - Lion d'Or",12:23,12:40,13:35,15:15,16:18,16:28,17:18,17:44,18:18,18:45,19:38
+"MALZÉVILLE - Gymnase",12:25,12:42,13:37,15:17,16:20,16:30,17:20,17:46,18:20,18:47,19:40
+"MALZÉVILLE - Pixérécourt",-,-,-,-,-,-,-,17:48,-,-,-
+"LAY-ST-CH. - Corvées",12:30,12:50,13:43,-,16:26,16:36,17:26,17:51,18:26,18:55,-
+"LAY-ST-CH. - Centre de Réadaptation",12:30,12:51,13:43,-,16:27,16:37,17:27,17:51,18:27,18:55,-
+"LAY-ST-CH. - Le Nid",12:31,12:52,13:44,15:25,16:28,16:38,17:28,17:52,18:29,18:56,19:50
+"LAY-ST-CH. - Jardins",12:32,12:53,13:45,15:27,16:30,16:40,17:30,17:53,18:30,18:57,19:51
+"LAY-ST-CH. - Pharmacie",12:37,12:55,13:47,15:30,16:31,16:41,17:31,17:55,18:31,18:58,19:52
+"EULMONT - Poirier",12:42,12:56,13:52,15:33,16:35,16:45,17:35,18:02,18:35,19:02,19:53
+"EULMONT - Ferme",12:45,12:57,14:01,15:35,16:38,16:48,17:38,18:06,18:39,19:03,19:54
+"MOULINS - Sous Moulins",12:52,13:00,14:03,15:39,16:42,16:52,17:42,18:08,18:42,19:06,19:58
+"BOUXIERES C. - Calvaire",12:54,13:03,14:05,15:43,16:46,16:56,17:46,18:10,18:44,19:08,20:00
+"BOUXIERES C. - Noisetiers",12:56,13:06,-,-,-,-,17:48,18:12,18:46,-,20:02
+"BOUXIERES C. - Le Chêne",-,-,-,-,16:49,16:59,-,-,-,19:10,-
+"BOUXIERES C. - Le Gué",12:57,13:07,-,-,-,-,17:50,18:13,18:47,-,20:03
+"ECUELLE - Les Vergers",12:59,13:09,14:14,15:45,16:54,17:04,17:54,18:17,18:51,19:15,20:06
+"ECUELLE - Lavoir",13:00,13:10,14:15,15:47,16:55,17:05,17:55,18:18,18:52,19:16,20:08
+"LEYR - Promenade",-,13:15,-,-,-,-,-,18:24,-,19:22,-`;
+
+        let state = {
+            direction: 'EcuelleNancy',
+            selectedStop: '',
+            currentTime: new Date(),
+            isSchoolPeriod: false, 
+            viewMode: 'today'
+        };
+
+        function parseCSV(csv) {
+            const lines = csv.trim().split('\n');
+            const periods = lines[0].split(',').slice(1);
+            const daysCodes = lines[1].split(',').slice(1);
+            const services = [];
+            for (let i = 0; i < periods.length; i++) {
+                if (!periods[i] || periods[i] === "") continue;
+                services.push({ period: periods[i].trim(), days: daysCodes[i].trim(), stops: {} });
+            }
+            for (let i = 2; i < lines.length; i++) {
+                const parts = lines[i].split(',');
+                const stopName = parts[0].replace(/"/g, '').trim();
+                if (!stopName) continue;
+                for (let j = 0; j < services.length; j++) {
+                    services[j].stops[stopName] = parts[j + 1] ? parts[j + 1].trim() : '-';
+                }
+            }
+            return services;
+        }
+
+        const db = { 
+            EcuelleNancy: parseCSV(rawDataEcuelleNancy), 
+            NancyEcuelle: parseCSV(rawDataNancyEcuelle) 
+        };
+
+        function updateDateTime() {
+            state.currentTime = new Date();
+            const now = state.currentTime;
+            state.isSchoolPeriod = false; // Par défaut vacances ici
+
+            const hh = now.getHours().toString().padStart(2, '0');
+            const mm = now.getMinutes().toString().padStart(2, '0');
+            const dateStr = now.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+            
+            document.getElementById('current-date-info').innerText = dateStr;
+            document.getElementById('current-time-display').innerText = `${hh}:${mm}`;
+            document.getElementById('period-info').innerText = state.isSchoolPeriod ? 'Période Scolaire' : 'Période Vacances Scolaire';
+        }
+
+        function isDayAllowed(serviceDays, dayIndex) {
+            const codes = {
+                'L-S': [1, 2, 3, 4, 5, 6],
+                'L-V': [1, 2, 3, 4, 5],
+                'L-M-J-V': [1, 2, 4, 5],
+                'L-M-J-V-S': [1, 2, 4, 5, 6],
+                'Me-S': [3, 6]
+            };
+            const cleanKey = serviceDays.trim();
+            const allowed = codes[cleanKey] || [];
+            return allowed.includes(dayIndex);
+        }
+
+        function getRemainingTimes() {
+            const services = db[state.direction];
+            let results = [];
+            
+            let dateTarget = new Date(state.currentTime);
+            if (state.viewMode === 'tomorrow') {
+                dateTarget.setDate(dateTarget.getDate() + 1);
+            }
+
+            const dayIndex = dateTarget.getDay(); 
+            const currentTotalMinutes = state.viewMode === 'today' 
+                ? (state.currentTime.getHours() * 60 + state.currentTime.getMinutes())
+                : -1; 
+
+            services.forEach(s => {
+                if (s.period === 'SC' && !state.isSchoolPeriod) return;
+                if ((s.period.includes('PV') || s.period.includes('PG')) && state.isSchoolPeriod) return;
+                if (!isDayAllowed(s.days, dayIndex)) return;
+
+                const timeStr = s.stops[state.selectedStop];
+                if (!timeStr || timeStr === '-') return;
+                
+                const [hh, mm] = timeStr.split(':').map(Number);
+                const busMinutes = hh * 60 + mm;
+                
+                if (busMinutes >= currentTotalMinutes) {
+                    results.push({ 
+                        time: timeStr, 
+                        minutesLeft: (state.viewMode === 'today' ? busMinutes - currentTotalMinutes : null) 
+                    });
+                }
+            });
+
+            return results.sort((a, b) => {
+                const [ah, am] = a.time.split(':').map(Number);
+                const [bh, bm] = b.time.split(':').map(Number);
+                return (ah * 60 + am) - (bh * 60 + bm);
+            });
+        }
+
+        function renderStops() {
+            const select = document.getElementById('select-stop');
+            const stops = new Set();
+            db[state.direction].forEach(s => Object.keys(s.stops).forEach(stop => stops.add(stop)));
+            
+            const prev = select.value;
+            select.innerHTML = '';
+            Array.from(stops).forEach(stop => {
+                const opt = document.createElement('option');
+                opt.value = opt.innerText = stop;
+                select.appendChild(opt);
+            });
+
+            if (prev && stops.has(prev)) select.value = prev;
+            else state.selectedStop = select.value;
+        }
+
+        function renderSchedule() {
+            const list = document.getElementById('schedule-list');
+            const times = getRemainingTimes();
+            document.getElementById('count-badge').innerText = times.length;
+            document.getElementById('results-title').innerText = state.viewMode === 'today' ? 'Passages à venir' : 'Passages pour demain';
+
+            if (times.length === 0) {
+                list.innerHTML = '';
+                document.getElementById('empty-state').classList.remove('hidden');
+                document.getElementById('empty-message').innerHTML = "Aucun passage prévu.";
+                return;
+            }
+            
+            document.getElementById('empty-state').classList.add('hidden');
+            list.innerHTML = times.map((t, i) => {
+                const isNext = i === 0 && state.viewMode === 'today';
+                let sub = state.viewMode === 'today' ? (t.minutesLeft === 0 ? "À l'arrêt" : t.minutesLeft < 60 ? `${t.minutesLeft} min` : `${Math.floor(t.minutesLeft/60)}h${(t.minutesLeft%60).toString().padStart(2,'0')}`) : "";
+
+                return `
+                <div class="flex items-center justify-between p-4 rounded-2xl border transition-all ${
+                    isNext ? 'bg-blue-600 border-blue-600 text-white shadow-lg scale-[1.02]' : 'bg-white dark:bg-slate-800 border-gray-100 dark:border-slate-700 text-gray-800 dark:text-slate-200'
+                }">
+                    <div class="flex items-baseline gap-3">
+                        <span class="text-2xl font-bold">${t.time}</span>
+                        ${isNext ? '<span class="text-[10px] font-black uppercase tracking-widest opacity-80 pulse-now">Suivant</span>' : ''}
+                    </div>
+                    <div class="text-right">
+                        <span class="text-xs font-bold ${isNext ? 'opacity-90' : 'text-blue-600 dark:text-blue-400'}">${sub}</span>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        document.getElementById('theme-toggle').addEventListener('click', () => {
+            const isDark = document.documentElement.classList.toggle('dark');
+            localStorage.setItem('theme', isDark ? 'dark' : 'light');
+            document.getElementById('sun-icon').classList.toggle('hidden', !isDark);
+            document.getElementById('moon-icon').classList.toggle('hidden', isDark);
+        });
+
+        document.getElementById('btn-swap').addEventListener('click', () => {
+            state.direction = state.direction === 'EcuelleNancy' ? 'NancyEcuelle' : 'EcuelleNancy';
+            document.getElementById('label-origin').innerText = state.direction === 'EcuelleNancy' ? 'Ecuelle' : 'Nancy';
+            document.getElementById('label-dest').innerText = state.direction === 'EcuelleNancy' ? 'Nancy' : 'Ecuelle';
+            renderStops();
+            renderSchedule();
+        });
+
+        function setView(m) {
+            state.viewMode = m;
+            document.getElementById('day-today').className = m === 'today' ? "flex-1 py-2 text-sm font-bold rounded-lg bg-white dark:bg-slate-700 shadow-sm text-blue-600 dark:text-blue-400" : "flex-1 py-2 text-sm font-bold text-gray-500";
+            document.getElementById('day-tomorrow').className = m === 'tomorrow' ? "flex-1 py-2 text-sm font-bold rounded-lg bg-white dark:bg-slate-700 shadow-sm text-blue-600 dark:text-blue-400" : "flex-1 py-2 text-sm font-bold text-gray-500";
+            renderSchedule();
+        }
+
+        document.getElementById('day-today').addEventListener('click', () => setView('today'));
+        document.getElementById('day-tomorrow').addEventListener('click', () => setView('tomorrow'));
+        document.getElementById('select-stop').addEventListener('change', (e) => { state.selectedStop = e.target.value; renderSchedule(); });
+
+        window.onload = () => {
+            if (localStorage.getItem('theme') === 'dark') document.documentElement.classList.add('dark');
+            updateDateTime();
+            renderStops();
+            renderSchedule();
+            setInterval(() => { updateDateTime(); if(state.viewMode === 'today') renderSchedule(); }, 30000);
+        };
+    </script>
+</body>
+</html>
